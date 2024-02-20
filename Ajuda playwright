@@ -1,0 +1,531 @@
+Passo a passo criando projeto playwright
+
+Aulas
+https://www.youtube.com/watch?v=4_m3HsaNwOE&list=PLhW3qG5bs-L9sJKoT1LC5grGT77sfW0Z8
+
+#Pré requisitos
+1. Instalar o node: https://nodejs.org/en/download , no terminal "node -v" para ver a versao instalada
+2. Instalar o vscode
+
+#Criação da estrutura basica do projeto - https://playwright.dev/docs/intro
+1- Criar uma pasta
+2- Abrir o vscode
+3- Abrir a pasta criada dentro do vscode
+4- Abrir o terminal pelo vscode
+5- Executar o comando "npm init playwright@latest"
+5.1- Escolher qual a linguagem vai utilizar
+5.2- Escolher qual a localizacao dos testes end to end
+5.3- Selecionar se vai ter iteracao com o github actions
+5.4- Instalar os browsers do playwright
+6. Para ver a versão do playwright npm playwright -v
+7. Para ver os comandos que podem ser executados npm playwright -h
+
+#Criação de um teste - https://playwright.dev/docs/writing-tests
+1- Os arquivos de testes devem conter no nome do arquivo ".spec.js" para serem reconhecidos como arquivo de testes
+2- No arquivo deve conter um import referenciando o módulo do playwright = import { test, expect } from '@playwright/test';
+3- A estrutura basica de um teste:
+
+<!-- test("Acessando pagina",async ({page}) => {
+  await page.goto("https://playwright.dev/docs/intro");
+  await expect(page).toHaveTitle('playwright')
+}) -->
+ 
+ Onde 'test' é o método da biblioteca que significa uma execução de um teste
+ 'O primeiro parâmetro é o nome do teste'
+ 'O segundo parametro diz que ele é assincrono
+  O parametro 'page' referencia um objeto que iterage com o browser, sem precisar inicializar como no selenium
+ 'O await siginifica que é para esperar o elemento que vem a seguir'
+  A chamada do page inicia o browser para alguma requisição
+  o método goto direciona o browser para algum site
+  
+#Executando teste via extensão vscode
+1- Ir no vscode
+2- Pesquisar nas extensões por Playwright Test for VSCode
+3- Depois de instalado ir na guia view - command palete e digitar Testing: Focus in playwright view
+4- Dessa maneira, podemos visualizar a arvore de testes e executar com cliques, ao invés de digitar o comando
+
+ 
+#Executando teste via terminal - https://playwright.dev/docs/running-tests
+1- Executar os testes headless : npx playwright test ,é só navegar até a pasta onde ta os test e rodar o comando,se rodar na raiz vai executar todos os testes
+2- Executar os testes através das interfaces: npx playwright test -ui
+3- Executar os testes abrindo o navegador: npx playwright test --headed
+4- Executar apenas um arquivo de teste com interface,basta setar o nome : npx playwright test {nome} --headed
+5- Executar apenas um arquivo de teste basta setar o nome : npx playwright test {nome}
+6- Executar o teste pelo titulo do teste : npx playwright test -g "add a todo item"
+7- Executar modo codegen : npx playwright codegen demo.playwright.dev/todomvc  
+8- Executar simutaneamente: npx playwright test --workers 3
+9- Executar teste que contem no arquivo uma parte do nome :npx playwright test  one  two
+10- Executar teste somente em um navagador : npx playwright test --project=chromium
+11- Executar em modo debug: npx playwright test --debug
+12- Executar em debug um arquivo especifico : npx playwright test example.spec.js --debug
+13- Executar em debug a partir de uma linha específica : npx playwright test example.spec.js:21 --debug
+14- Executar pela tag : npx playwright test .\Aula11-anotationstags.spec.js --grep "@fast"
+Obs . A melhor estratégia é executar em modo debug, ir visualizando cada passo para encontrar erro
+	Depois que certa parte estiver completa, podemos executar o debug a partir de linha especifica
+	Quando o teste estiver completo, executamos de forma normal
+	Para testes regressivos, o melhor é executar via headless
+	
+#Executando o debug - https://playwright.dev/docs/running-tests
+14- Executar via debug no site especifico com iphone 11 salvando no arquivo
+	<!-- npx playwright codegen google.com --device "iPhone 11" -o --output teste -->
+
+#Visualizando report do teste HTML - https://playwright.dev/docs/running-tests
+1- Podemos ver a pasta playwright-report após a execução do teste
+2- Após a execução do teste podemos executar o comando : npx playwright show-report
+
+#Usando o Trace view: https://playwright.dev/docs/trace-viewer
+No arquivo de configuração (playwright.config.js) dentro de module.exports = defineConfig.
+ 1- Adicionando parametro:  trace: 'on-first-retry', significa que todo o passo dos logs de erro mostrara
+	na primeira retentativa do teste(de uma maneira mais completa)
+ 2- Adicionando parametro: retries : 1 ,  Essa informação é a repetição de tentativas caso o teste de erro
+ 3- Exemplo: 
+ 
+<!-- 	  retries : 1,
+	  timeout: 10000,
+	  expect:{
+		timeout:5000
+	  },
+	  
+	  use: {
+		baseURL: 'http://127.0.0.1:3000',
+		actionTimeout: 0,
+		trace: 'on-first-retry',
+  }, -->
+
+  4- Com essas configurações, após o erro do primeiro teste, tera um nova retentativa. Após essa retentativa
+  com erro, o próprio navegador vai abrir uma pagina local, com o modo visual do erro em detalhes. Esse erro
+  ficara salvo na pasta test-results -> trace.zip. Para abrir essa pagina novamente:
+  > npx playwright show-trace trace.zip
+
+  5 - trace: 'on-first-retry' faz o trace view na retentativa, trace: 'retain-on-failure' faz o trace viwe
+  somente nos testes que deram erro
+  
+  6- Se eu não quiser alterar no arquivo de configuração, posso executar o teste com o trace ligado:
+  > npx playwright test --trace on
+  
+  7- Posso utilizar o trace de uma maneira mais eficaz, adicionando no código a cada execução
+  no parametro do método, adiciono o context, e chamo ele pra inicializar o rastreio mandando
+  snapshot, que sao prints antes e depois de entrar no elemento,e screenshots que são prints do elemento
+  no final eu dou stop no rastreio e salvo num arquivo zip, entao posso visualizar pelo npx playwright show-trace trace.zip
+  
+  Exemplo:
+  <!-- const { test, expect } = require('@playwright/test');
+
+	test('teste com print e log', async ({ page, context }) => {
+	  await context.tracing.start(
+		{ 
+		  snapshots: true, 
+		  screenshots: true 
+		})
+
+	  await page.goto('https://playwright.dev/');
+
+	  // Click the get started link.
+	  await page.getByRole('link', { name: 'Get started' }).click();
+
+	  // Expects page to have a heading with the name of Installation.
+	  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+
+	  await context.tracing.stop(
+		{
+		  path: 'testprint-trace.zip'
+		}
+	  )
+
+	}); -->
+	
+	8- Adicionando o trace no before e after com snapshot e 
+	
+	Classe completa com before e after
+	
+	<!-- const { test, expect } = require('@playwright/test');
+
+	let context;
+	let page;
+
+	test.beforeAll(async({browser}) =>{
+	  context = await browser.newContext();
+	  await context.tracing.start(
+		{ 
+		  snapshots: true, 
+		  screenshots: true 
+		})
+		page = await context.newPage();
+	})
+
+	test.afterAll(async()=>{
+	  await context.tracing.stop(
+		{
+		  path: 'testprint-trace2.zip'
+		}
+	  )
+	})
+
+
+	test('teste com print e log', async ({}) => {
+
+	  await page.goto('https://playwright.dev/');
+
+	  await page.getByRole('link', { name: 'Get started' }).click();
+
+	  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+
+	}); -->
+
+	---------------------
+#Localizadores - https://playwright.dev/docs/other-locators - https://playwright.dev/docs/locators
+
+1- Para pausar o navegador na page e abrir o inspetor : await page.pause();
+2- Algumas maneiras de encontrar os elementos
+
+    // Usando o objeto
+    await page.click('id=user-name')
+    await page.locator('id=user-name').fill('teste');
+    await page.locator('[id="user-name"]').fill('teste2');
+    await page.pause();
+
+    // Usando Css selector, clica com o botão direito no elemento e copiar o selector
+    //#login-button
+    await page.locator("#login-button").click();
+
+    // Usando Xpath
+    await page.locator("//input[@id='password']").fill('123123')
+    await page.pause();
+
+    // Usando texto
+    await page.locator("text=Login").click();
+    await page.locator(':has-text("Login")').click();
+    await page.locator('input:has-text("Login")').click();
+
+3- Existem 3 maneiras de inspecionar os elementos e debugar o código
+	A. Modo codegen no terminal: npx playwright codegen google.com
+	B. Modo debug no terminal: npx playwright test --debug
+	C. Modo pause no código: await page.pause(); Depois que o codigo é pausado 
+		podemos gravar a ação e ir coletando os elementos
+	
+#Expects - https://playwright.dev/docs/test-assertions
+expect são as validações esperadas que envolve algum elemento
+expect é uma biblioteca playwright	
+
+Existem as assertions e as soft assertions
+assertions: validacoes que impedem que o fluxo continue caso a validação esteja errada
+soft assertions: validacoes que não impedem que o fluxo continue caso a validação esteja errada, apenas um aviso
+    <!-- //ASSERTIONS
+    //verifica se existe um unico elemento com esse texto
+    await expect(page.locator('text=The Kitchen')).toHaveCount(1);
+
+    //verifica se um elemento está na tela e executa a ação
+    if(await page.$('text=The Kitchen')){
+        await page.locator('text=The Kitchen').click();
+    }
+    
+    //verifica se o elemento está visivel ou oculto
+    // com expect soft se o teste falhar, não para a aplicação
+    await expect(page.locator('text=The Kitchen')).toBeVisible();
+    //await expect.soft(page.locator('text=The Kitchen')).toBeHidden();
+
+    //verifica se o elemento está habilitado ou desabilitado
+    await expect(page.locator('text=The Kitchen')).toBeEnabled();
+    //await expect.soft(page.locator('text=The Kitchen')).toBeDisabled();
+
+    //verifica se o elemento contem o texto
+    await expect(page.locator("//h1[@class='chakra-heading css-dpmy2a']")).toHaveText('The Kitchen');
+    await expect(page.locator("//h1[@class='chakra-heading css-dpmy2a']")).toContainText('Kitchen');
+    await expect(page.locator("//h1[@class='chakra-heading css-dpmy2a']")).not.toHaveText('Ola');
+
+    //verifica se o elemento tem a classe chakra-heading css-dpmy2a ou tem uma parte da classe
+    await expect(page.locator('text=The Kitchen')).toHaveAttribute('class','chakra-heading css-dpmy2a')
+    await expect(page.locator('text=The Kitchen')).toHaveAttribute('class',/.*css-dpmy2a/);
+    await expect(page.locator('text=The Kitchen')).toHaveClass(/.*css-dpmy2a/);
+
+    //OUTRAS ASSERTIONS
+    await expect(page).toHaveURL('https://kitchen.applitools.com/');
+    await expect(page).toHaveTitle('The Kitchen');
+    await expect(page).toHaveTitle(/.*Kitchen/);
+
+    //VALIDAÇÃO VISUAL COM SCREENSHOT - FAZ UMA COMPARAÇÃO DE SCREENSHOTS E VALIDA 
+    //valida se tem screenshot , vai dar false, porque nao tem
+    await page.pause();
+    await expect(page).toHaveScreenshot(); -->
+	
+#Slow motion e gravação de video - https://playwright.dev/docs/videos
+
+Para gravar video, dentro de playwright.config.js, dentro de use :
+
+	<!-- use: {
+		video : 'on'
+	},
+
+	Para gravar em slow motion , dentro de playwright.config.js, dentro de use :
+	use: {
+		video : 'on',
+		launchOptions:{
+		  slowMo: 1000
+		}
+	}, -->
+
+Executando pelo nome do teste, modo visual e somente no chomium
+npx playwright test -g "Primeiro teste" --headed --project chromium
+
+#Hooks e group
+
+Hooks é um arquivo de teste que organiza o inicio dos testes usando before e after
+beforeAll
+executado antes de todos os testes no arquivo
+quando usado dentro de description, é executado antes de todos os testes do grupo
+Se vários beforeAll forem usados, eles serão executados na ordem de seu registro
+
+beforeEach
+executado antes de cada teste no arquivo
+quando usado dentro de description, é executado antes de cada teste no grupo
+Se vários beforeEach forem usados, eles serão executados na ordem de seu registro
+
+afterAll
+executa após todos os testes no arquivo
+quando usado dentro de description, é executado após todos os testes do grupo
+Se vários afterAll forem usados, eles serão executados na ordem de registro
+
+afterEach
+é executado após cada teste no arquivo
+quando usado dentro de description, é executado após cada teste no grupo
+Se vários afterEach forem usados, eles serão executados na ordem de seu registro
+
+<!--  test.afterEach(async ({ page }) => {
+   await page.close();
+}) -->
+
+> de uma maneira mais organizada, os testes ficariam assim
+<!-- test.describe('Realizando login sc', () => {
+   test.beforeAll(async ({ }) => {
+      console.log('Teste iniciadoo...')
+   })
+   test.beforeEach(async ({ page }) => {
+      await page.goto('https://demo.applitools.com/')
+      await page.locator('[placeholder="Enter your username"]').fill('Raghav');
+      await page.locator('[placeholder="Enter your password"]').fill('1234');
+      await page.locator('text=Sign in').click();
+      await page.locator('text=ACME').isVisible();
+   })
+   test.afterEach(async ({ page }) => {
+      console.log('Testes finalizados...')
+      await page.close();
+   }) -->
+   
+#Anotations e tags - https://playwright.dev/docs/test-annotations  
+
+//test.skip - Pula um teste
+test.skip('Pular teste', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+//test.fail() - Marca o teste como falha
+test('Teste marcado com falha', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  test.fail();
+});
+
+//test.fixme - Marca o teste como correção, esse teste vai ser ignorado
+test.fixme('Teste marcado para correcao', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  test.fail();
+});
+
+//test.slow() - Esse teste ira triplicar o timeout
+test('executar login slow', async ({ page }) => {
+  test.slow();
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+//test.only - Somenete esse teste ira ser executado nessa classe
+test.only('executar somente esse', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+//teste com condicional. Pula o test caso seja executado no firefox
+test('skip this test', async ({ page, browserName }) => {
+  test.skip(browserName === 'firefox', 'Still working on it');
+});
+
+
+//teste separado por grupos
+test.describe('Teste do grupo', () => {
+  test('Teste do grupo 1', async ({ page }) => {
+    await page.goto('https://www.saucedemo.com/');
+  })
+  test('Teste do grupo 2', async ({ page }) => {
+    await page.goto('https://www.saucedemo.com/');
+  })
+  test('Teste do grupo 3', async ({ page }) => {
+    await page.goto('https://www.saucedemo.com/');
+  })
+})
+
+> tags
+// No titulo adicionar a tag (@fast) e no terminal usar 'npx playwright test --grep @fast'
+//Não executar os testes com uma determinada tag, no terminal usar 'npx playwright test --grep-invert @fast'
+test('executar somente esses 1 @fast', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+test('executar somente esses 2 @fast', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+test('executar somente esses 3 @fast', async ({ page }) => {
+  await page.goto('https://www.saucedemo.com/');
+  await page.locator('[data-test="username"]').click();
+  await page.locator('[data-test="username"]').fill('standard_user');
+});
+
+
+#Testes via API - https://playwright.dev/docs/api-testing - https://playwright.dev/docs/api/class-apirequestcontext
+
+Para teste via API, precisamos olhar detalhes em log, o melhor é usar o modo interface 
+npx playwright test login.spec.js --ui
+
+Basico de uma classe de teste de API. Usamos o mesmo import de testes UI, mas no parametro passamos request
+ 
+	import {test,expect} from '@playwright/test';
+
+	test('API get request',async({request}) ={
+		
+	})
+	
+	
+
+#Criando projeto
+
+1- Criar uma pasta
+2- Abrir o vscode
+3- Abrir a pasta criada dentro do vscode
+4- Abrir o terminal pelo vscode
+5- Executar o comando npm init playwright@latest
+6- Criei um cenario de teste com nome login.spec.js
+7- Adicionei a estrutura do teste, o import e o método:
+<!-- 	import {test,expect} from '@playwright/test';
+
+	test("login com sucesso",async({page}) =>{
+		
+	}) -->
+	
+8- Vou buscar os elementos via codegen: <!-- npx playwright codegen https://the-internet.herokuapp.com/login -->
+
+9- Criei 3 testes com os elementos encontrados
+10-No meu arquivo de configuração (playwright.config.js) adicionei :
+	A- Tempos explicito e implicito
+	
+<!-- 	  //Explict time for all actions
+	  timeout: 5000,
+	  expect:{
+		//time for expect()
+		timeout:5000
+	  }, -->
+	  
+	B- Dentro de parametro use adicionei video on e slow motion
+	
+<!-- 	use: {
+    /* Record video and Slow motion*/
+    video: 'on',
+    launchOptions:{
+      slowMo: 1000
+    }, -->
+	
+	C- Se eu deixar o trace on, consigo ver o trace passo a passo da execução " trace: 'on' "
+	D- Posso tambem usar ao inves do --headed, usar o modo interface pra executar "--ui",
+	
+11- Executei "npx playwright test login.spec.js --headed --project chromium"
+meus testes passaram com sucesso e com video adicionado e o stack trace do teste
+
+12- Visualizei a evidencia do teste com sucesso com "npx playwright show-report"
+
+13- Se eu quero vizualizer o trace do teste, vou até a pasta onde 
+está e executo "npx playwright show-report trace.zip"
+
+14- Posso executar os testes somente com 1 navegador, é só no arquivo de conf comentar códigos referentes
+aos navegadores que eu não quero que sejam executados, então não preciso mais executar o "--project chromium":
+<!--     {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    }, -->
+	
+	
+> 15- #Criando page object
+Na raiz do projeto criei uma pasta pages e um arquivo login.js:
+
+A)Nesse arquivo criei uma classe chamada LoginPage, exportei ela(com opção exports.LoginPage)
+B)Criei um construtor e coloquei os locator lá dentro
+C)Criei os métodos async para puxar os locators do construtor
+D)Todos os métodos tem que ser o await e o this
+
+<!-- import { expect } from '@playwright/test';
+
+exports.LoginPage = class LoginPage {
+
+    constructor(page) {
+        this.page = page;
+        this.username_textbox = page.getByLabel('Username');
+        this.password_textbox = page.getByLabel('Password');
+        this.login_button = page.getByRole('button', { name: 'Login' });
+        this.msgsucesso = page.locator("//*[contains(text(),'You logged into a secure area!')]");
+    }
+
+    async enterPage() {
+        await this.page.goto('https://the-internet.herokuapp.com/login');
+    }
+
+
+    async enterUserName(username) {
+        await this.username_textbox.fill(username);
+    }
+
+    async enterPassword(password) {
+        await this.password_textbox.fill(password)
+    }
+
+    async clickButtonLogin() {
+        await this.login_button.click();
+    }
+
+    async validateLoginSucess() {
+        await expect(this.msgsucesso).toBeVisible();
+    }
+} -->
+
+Criei um arquivo de teste login.spec.js?
+
+A)Fiz o import do LoginPage
+B)Criei um método de teste
+C)Criei uma nova instancia de Login Page
+D)Com essa instancia chamei os métodos
+E)Todos os métodos tem que ter await
+
+<!-- import {test,expect} from '@playwright/test';
+import {LoginPage} from '../pages/login';
+
+test.only("login com sucesso",async({page}) =>{
+
+  const login = new LoginPage(page);  
+  await login.enterPage();
+  await login.enterUserName('tomsmith');
+  await login.enterPassword('SuperSecretPassword!')
+  await login.clickButtonLogin();
+  await login.validateLoginSucess();
+
+}) -->
+	
+	
